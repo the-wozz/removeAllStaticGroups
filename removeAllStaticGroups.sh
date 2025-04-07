@@ -3,7 +3,7 @@
 # Zachary 'Woz'nicki
 # What it do: Removes all Static Groups from a device WITHOUT deleting the computer record...
 # Requirements: JQ... (macOS 15 OR Homebrew) This makes reading JSON files sooooo much easier...
-version="0.9 (Last Update: 4/2/25)"
+version="1.0 (Last Update: 4/7/25)"
 
 # MODIFABLE variables #
 # Jamf Pro URL
