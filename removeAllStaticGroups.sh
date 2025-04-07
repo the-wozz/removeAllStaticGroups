@@ -17,8 +17,8 @@ removeFunction=0
 
 # DO NOT TOUCH variables #
 # Serial Number of machine running the script
-#serialNumber=$(/usr/sbin/system_profiler SPHardwareDataType | awk '/Serial/ {print $4}')
-serialNumber=$1
+serialNumber=$(/usr/sbin/system_profiler SPHardwareDataType | awk '/Serial/ {print $4}')
+#serialNumber=$1
 # Current date in Epoch time, used for Bearer Token gathering
 current_epoch=$(/bin/date +%s)
 # JSON for Reference Computer Groups
@@ -167,23 +167,50 @@ modifyArray(){
     # add ] to end of file
     echo "]" >> "$full_Json" && echo "Modify complete!"
 
+    # further modification of the JSON file, IMPORTANT!
+    modifyJSON
+
     # verify the JQ 'conversion' works by executing the below command
-    if [[ $(/bin/cat "$full_Json" | jq) && $? -eq 0 ]]; then 
+    if [[ $(jq . "$full_Json") && $? -eq 0 ]]; then 
         echo "JQ | Good conversion!"
     else  
         echo "JQ | Unable to proceed. JQ membership conversion FAILED! Exiting..." && exit 1 
     fi
 }
+
+# 4/4/25
+# checks the group membership JSON file to make sure there are no extra quotes within the name of the Smart/Static Group which will not allow proper reading of the JSON
+modifyJSON(){
+    echo "Checking JSON for extra quotes in Static Group names..."
+    # set IFS to new lines in leiu of spaces (by default)
+    IFS=$'\n'
+    # grep the 'groupName' key, head grabs the first entry, sed removes the leading whitespace
+    groupName=$(cat "$full_Json" | grep groupName)
+
+        for i in $groupName; do
+            # modify the string again to remove ALL quotes (in-case there is quotes in the Smart/Static Group)
+            groupName2=$(echo "\"$i\"" | tr -d \", | sed 's/groupName: //' | sed 's/^[[:space:]]*//')
+                # new string again to put back the quotes in the correct spot and add the comma at the end
+                groupName3="  \"groupName\": \"$groupName2\","
+                    # test line to make sure the above edits are correct
+                    echo modified: "$groupName3"
+                    # make a live change to the JSON file via 'sed'
+                    sed -i '' 's/'"\"$i"\"'/'"$groupName3"'/' $full_Json
+        done
+}
 ## END FUNCTIONS ##
 
 ### MEAT ###
 echo "$version"
+# checks for JQ
 echo "Checking 'JQ' requirement..." && [[ $(jq --version) && $? -eq 0 ]] && echo "JQ FOUND!" || echo "JQ NOT found! Exiting..." exit 1
+# checks if there is somehow a JSON membership file already on the machine and removes
 echo "Checking if prior JSON exists..." && [ -e "$full_Json" ] && rm -rf "$full_Json" && echo "$full_Json FOUND & deleted!"
 echo "Utilizing Serial Number: $serialNumber"
 storedCredentialCheck
 jamfInventory
     viewStatics
         staticName
-
-echo "Good exit";accessToken="abc";rm -rf "$full_Json";exit 0
+# echo we are exiting, set a bad access token, delete the json, then exit
+echo "Good exit";accessToken="abc";#rm -rf "$full_Json";
+exit 0
